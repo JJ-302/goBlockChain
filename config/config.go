@@ -21,6 +21,6 @@ func init() {
 	}
 
 	Config = ConfigList{
-		LogFile: cfg.Section("godiary").Key("log_file").String(),
+		LogFile: cfg.Section("goblockchain").Key("log_file").String(),
 	}
 }
