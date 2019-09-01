@@ -63,5 +63,5 @@ func Printblock() {
 		fmt.Printf(format, "Nonce", v.Nonce)
 		fmt.Printf(format, "Transactions", v.Transactions)
 	}
-	fmt.Println(strings.Repeat("*", 50))
+	fmt.Printf("%s\n\n\n", strings.Repeat("*", 50))
 }
