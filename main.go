@@ -9,8 +9,12 @@ import (
 func main() {
 	utils.LoggingSettings(config.Config.LogFile)
 	app.Printblock()
-	app.CreateBlock(1, "second hash")
+
+	previousHash := app.Chain[len(app.Chain)-1].Hash()
+	app.CreateBlock(1, previousHash)
 	app.Printblock()
-	app.CreateBlock(2, "third hash")
+
+	previousHash = app.Chain[len(app.Chain)-1].Hash()
+	app.CreateBlock(2, previousHash)
 	app.Printblock()
 }

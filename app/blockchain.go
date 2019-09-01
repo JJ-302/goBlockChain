@@ -1,6 +1,9 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,11 +21,13 @@ type Block struct {
 	Transactions []Transaction
 }
 
-var chain []Block
+var Chain []Block
 var transactionPool []Transaction
 
 func init() {
-	CreateBlock(5, "initial hash")
+	var initialHash []byte
+	hash := sha256.Sum256(initialHash)
+	CreateBlock(5, hex.EncodeToString(hash[:]))
 }
 
 func CreateBlock(nonce int, ph string) {
@@ -32,13 +37,19 @@ func CreateBlock(nonce int, ph string) {
 		Nonce:        nonce,
 		Transactions: transactionPool,
 	}
-	chain = append(chain, b)
+	Chain = append(Chain, b)
+}
+
+func (b *Block) Hash() string {
+	bbyte, _ := json.Marshal(b)
+	hash := sha256.Sum256(bbyte)
+	return hex.EncodeToString(hash[:])
 }
 
 func Printblock() {
 	headerLine := strings.Repeat("=", 25)
-	for i, v := range chain {
 	format := "%-15s : %v\n"
+	for i, v := range Chain {
 		fmt.Println(headerLine + "Chain" + strconv.Itoa(i) + headerLine)
 		fmt.Printf(format, "PreviousHash", v.PreviousHash)
 		fmt.Printf(format, "Timestamp", v.Timestamp.Format(time.RFC3339))
