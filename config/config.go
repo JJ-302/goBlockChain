@@ -7,11 +7,13 @@ import (
 	ini "gopkg.in/ini.v1"
 )
 
-type ConfigList struct {
+// Configlist has some info for application.
+type Configlist struct {
 	LogFile string
 }
 
-var Config ConfigList
+// Config is result when initialized Configlist.
+var Config Configlist
 
 func init() {
 	cfg, err := ini.Load("config.ini")
@@ -20,7 +22,7 @@ func init() {
 		os.Exit(1)
 	}
 
-	Config = ConfigList{
+	Config = Configlist{
 		LogFile: cfg.Section("goblockchain").Key("log_file").String(),
 	}
 }
