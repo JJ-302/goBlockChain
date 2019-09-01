@@ -35,3 +35,14 @@ func CreateBlock(nonce int, ph string) {
 	chain = append(chain, b)
 }
 
+func Printblock() {
+	headerLine := strings.Repeat("=", 25)
+	for i, v := range chain {
+		fmt.Println(headerLine + "Chain" + strconv.Itoa(i) + headerLine)
+		fmt.Printf("%-15s : %v\n", "PreviousHash", v.PreviousHash)
+		fmt.Printf("%-15s : %v\n", "Timestamp", v.Timestamp.Format(time.RFC3339))
+		fmt.Printf("%-15s : %v\n", "Nonce", v.Nonce)
+		fmt.Printf("%-15s : %v\n", "Transactions", v.Transactions)
+	}
+	fmt.Println(strings.Repeat("*", 50))
+}
