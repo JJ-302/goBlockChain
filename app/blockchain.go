@@ -12,7 +12,9 @@ import (
 
 // Transaction within transaction value.
 type Transaction struct {
-	Value float64
+	SenderBlockchainAddress string
+	RecipientAddress        string
+	Value                   float64
 }
 
 // Block is a mined some transactions.
@@ -50,6 +52,17 @@ func (b *Block) Hash() string {
 	bbyte, _ := json.Marshal(b)
 	hash := sha256.Sum256(bbyte)
 	return hex.EncodeToString(hash[:])
+}
+
+// AddTransaction is create a struct base on args.
+// And append created transaction to transactionPool.
+func AddTransaction(senderBlockchainAddress string, recipientAddress string, value float64) {
+	ts := Transaction{
+		SenderBlockchainAddress: senderBlockchainAddress,
+		RecipientAddress:        recipientAddress,
+		Value:                   value,
+	}
+	transactionPool = append(transactionPool, ts)
 }
 
 // Printblock is print blockchain on terminal.
