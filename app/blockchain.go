@@ -55,13 +55,20 @@ func (b *Block) Hash() string {
 // Printblock is print blockchain on terminal.
 func Printblock() {
 	headerLine := strings.Repeat("=", 25)
-	format := "%-15s : %v\n"
+	formatA := "%-15s : %v\n"
+	formatB := "%-25s : %v\n"
 	for i, v := range Chain {
 		fmt.Println(headerLine + "Chain" + strconv.Itoa(i) + headerLine)
-		fmt.Printf(format, "PreviousHash", v.PreviousHash)
-		fmt.Printf(format, "Timestamp", v.Timestamp.Format(time.RFC3339))
-		fmt.Printf(format, "Nonce", v.Nonce)
-		fmt.Printf(format, "Transactions", v.Transactions)
+		fmt.Printf(formatA, "PreviousHash", v.PreviousHash)
+		fmt.Printf(formatA, "Timestamp", v.Timestamp.Format(time.RFC3339))
+		fmt.Printf(formatA, "Nonce", v.Nonce)
+		fmt.Println("Transactions")
+		fmt.Println(strings.Repeat("-", 50))
+		for _, v := range v.Transactions {
+			fmt.Printf(formatB, "SenderBlockchainAddress", v.SenderBlockchainAddress)
+			fmt.Printf(formatB, "RecipientAddress", v.RecipientAddress)
+			fmt.Printf(formatB, "Value", v.Value)
+		}
 	}
 	fmt.Printf("%s\n\n\n", strings.Repeat("*", 50))
 }
