@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"regexp"
+	"strings"
 	"time"
 )
 
@@ -25,6 +27,8 @@ type Block struct {
 // Chain is a bucket to append mined block.
 var Chain []Block
 var transactionPool []Transaction
+
+const miningDifficulty = 3
 
 func init() {
 	var initialHash []byte
@@ -60,4 +64,28 @@ func AddTransaction(senderBlockchainAddress string, recipientAddress string, val
 		Value:                   value,
 	}
 	transactionPool = append(transactionPool, ts)
+}
+
+// ValidProof is return whether was mining successfully.
+func ValidProof(transactions []Transaction, ph string, nonce int) bool {
+	guessBlock := Block{
+		PreviousHash: ph,
+		Nonce:        nonce,
+		Transactions: transactions,
+	}
+	guessHash := guessBlock.Hash()
+	validHash := regexp.MustCompile("^" + strings.Repeat("0", miningDifficulty))
+	return validHash.MatchString(guessHash)
+}
+
+// ProofOfWork is return nonce when success mining.
+func ProofOfWork() int {
+	transactions := make([]Transaction, len(transactionPool))
+	copy(transactions, transactionPool)
+	previousHash := Chain[len(Chain)-1].Hash()
+	nonce := 0
+	for !ValidProof(transactions, previousHash, nonce) {
+		nonce++
+	}
+	return nonce
 }

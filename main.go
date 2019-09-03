@@ -12,12 +12,14 @@ func main() {
 
 	app.AddTransaction("A", "B", 1.0)
 	previousHash := app.Chain[len(app.Chain)-1].Hash()
-	app.CreateBlock(1, previousHash)
+	nonce := app.ProofOfWork()
+	app.CreateBlock(nonce, previousHash)
 	utils.Printblock()
 
 	app.AddTransaction("C", "D", 2.0)
 	app.AddTransaction("E", "F", 3.0)
 	previousHash = app.Chain[len(app.Chain)-1].Hash()
-	app.CreateBlock(2, previousHash)
+	nonce = app.ProofOfWork()
+	app.CreateBlock(nonce, previousHash)
 	utils.Printblock()
 }
