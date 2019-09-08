@@ -24,6 +24,7 @@ func Printblock() {
 			fmt.Printf(formatB, "SenderBlockchainAddress", v.SenderBlockchainAddress)
 			fmt.Printf(formatB, "RecipientAddress", v.RecipientAddress)
 			fmt.Printf(formatB, "Value", v.Value)
+			fmt.Println(strings.Repeat("-", 50))
 		}
 	}
 	fmt.Printf("%s\n\n\n", strings.Repeat("*", 50))
