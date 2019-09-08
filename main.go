@@ -8,18 +8,15 @@ import (
 
 func main() {
 	utils.LoggingSettings(config.Config.LogFile)
-	utils.Printblock()
-
-	app.AddTransaction("A", "B", 1.0)
-	previousHash := app.Chain[len(app.Chain)-1].Hash()
-	nonce := app.ProofOfWork()
-	app.CreateBlock(nonce, previousHash)
-	utils.Printblock()
+	myBlockchainAddress := "myBlockchainAddress"
 
 	app.AddTransaction("C", "D", 2.0)
+	app.Mining(myBlockchainAddress)
+	utils.Printblock()
+	app.TransactionPool = app.TransactionPool[:0]
+
 	app.AddTransaction("E", "F", 3.0)
-	previousHash = app.Chain[len(app.Chain)-1].Hash()
-	nonce = app.ProofOfWork()
-	app.CreateBlock(nonce, previousHash)
+	app.AddTransaction("E", "G", 3.0)
+	app.Mining(myBlockchainAddress)
 	utils.Printblock()
 }

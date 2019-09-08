@@ -29,6 +29,8 @@ var Chain []Block
 var transactionPool []Transaction
 
 const miningDifficulty = 3
+const miningSender = "The BlockChain"
+const miningReward = 1.0
 
 func init() {
 	var initialHash []byte
@@ -88,4 +90,12 @@ func ProofOfWork() int {
 		nonce++
 	}
 	return nonce
+}
+
+// Mining is run 'proof of work', create a block, and reward miner.
+func Mining(blockchainAddress string) {
+	AddTransaction(miningSender, blockchainAddress, miningReward)
+	previousHash := Chain[len(Chain)-1].Hash()
+	nonce := ProofOfWork()
+	CreateBlock(nonce, previousHash)
 }
