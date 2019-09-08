@@ -13,7 +13,6 @@ func main() {
 	app.AddTransaction("C", "D", 2.0)
 	app.Mining(myBlockchainAddress)
 	utils.Printblock()
-	app.TransactionPool = app.TransactionPool[:0]
 
 	app.AddTransaction("E", "F", 3.0)
 	app.AddTransaction("E", "G", 3.0)
