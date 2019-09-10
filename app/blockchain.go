@@ -99,3 +99,19 @@ func Mining(blockchainAddress string) {
 	nonce := ProofOfWork()
 	CreateBlock(nonce, previousHash)
 }
+
+// CalculateTotalAmount is calculates the amount of Bitcoin you have.
+func CalculateTotalAmount(blockchainAddress string) float64 {
+	totalAmount := 0.0
+	for _, block := range Chain {
+		for _, ts := range block.Transactions {
+			if blockchainAddress == ts.RecipientAddress {
+				totalAmount += ts.Value
+			}
+			if blockchainAddress == ts.SenderBlockchainAddress {
+				totalAmount -= ts.Value
+			}
+		}
+	}
+	return totalAmount
+}

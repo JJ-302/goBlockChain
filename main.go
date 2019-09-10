@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"projects/goBlockChain/app"
 	"projects/goBlockChain/config"
 	"projects/goBlockChain/utils"
@@ -18,4 +19,8 @@ func main() {
 	app.AddTransaction("E", "G", 3.0)
 	app.Mining(myBlockchainAddress)
 	utils.Printblock()
+
+	fmt.Println("my", app.CalculateTotalAmount(myBlockchainAddress))
+	fmt.Println("E", app.CalculateTotalAmount("E"))
+	fmt.Println("F", app.CalculateTotalAmount("F"))
 }
