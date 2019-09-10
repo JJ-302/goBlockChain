@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"projects/goBlockChain/app"
 	"projects/goBlockChain/config"
 	"projects/goBlockChain/utils"
@@ -8,16 +9,18 @@ import (
 
 func main() {
 	utils.LoggingSettings(config.Config.LogFile)
-	app.Printblock()
-
-	app.AddTransaction("A", "B", 1.0)
-	previousHash := app.Chain[len(app.Chain)-1].Hash()
-	app.CreateBlock(1, previousHash)
-	app.Printblock()
+	myBlockchainAddress := "myBlockchainAddress"
 
 	app.AddTransaction("C", "D", 2.0)
+	app.Mining(myBlockchainAddress)
+	utils.Printblock()
+
 	app.AddTransaction("E", "F", 3.0)
-	previousHash = app.Chain[len(app.Chain)-1].Hash()
-	app.CreateBlock(2, previousHash)
-	app.Printblock()
+	app.AddTransaction("E", "G", 3.0)
+	app.Mining(myBlockchainAddress)
+	utils.Printblock()
+
+	fmt.Println("my", app.CalculateTotalAmount(myBlockchainAddress))
+	fmt.Println("E", app.CalculateTotalAmount("E"))
+	fmt.Println("F", app.CalculateTotalAmount("F"))
 }

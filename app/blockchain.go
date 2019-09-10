@@ -4,8 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"strconv"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -28,6 +27,10 @@ type Block struct {
 // Chain is a bucket to append mined block.
 var Chain []Block
 var transactionPool []Transaction
+
+const miningDifficulty = 3
+const miningSender = "The BlockChain"
+const miningReward = 1.0
 
 func init() {
 	var initialHash []byte
@@ -65,23 +68,50 @@ func AddTransaction(senderBlockchainAddress string, recipientAddress string, val
 	transactionPool = append(transactionPool, ts)
 }
 
-// Printblock is print blockchain on terminal.
-func Printblock() {
-	headerLine := strings.Repeat("=", 25)
-	formatA := "%-15s : %v\n"
-	formatB := "%-25s : %v\n"
-	for i, v := range Chain {
-		fmt.Println(headerLine + "Chain" + strconv.Itoa(i) + headerLine)
-		fmt.Printf(formatA, "PreviousHash", v.PreviousHash)
-		fmt.Printf(formatA, "Timestamp", v.Timestamp.Format(time.RFC3339))
-		fmt.Printf(formatA, "Nonce", v.Nonce)
-		fmt.Println("Transactions")
-		fmt.Println(strings.Repeat("-", 50))
-		for _, v := range v.Transactions {
-			fmt.Printf(formatB, "SenderBlockchainAddress", v.SenderBlockchainAddress)
-			fmt.Printf(formatB, "RecipientAddress", v.RecipientAddress)
-			fmt.Printf(formatB, "Value", v.Value)
+// ValidProof is return whether was mining successfully.
+func ValidProof(transactions []Transaction, ph string, nonce int) bool {
+	guessBlock := Block{
+		PreviousHash: ph,
+		Nonce:        nonce,
+		Transactions: transactions,
+	}
+	guessHash := guessBlock.Hash()
+	validHash := regexp.MustCompile("^" + strings.Repeat("0", miningDifficulty))
+	return validHash.MatchString(guessHash)
+}
+
+// ProofOfWork is return nonce when success mining.
+func ProofOfWork() int {
+	transactions := make([]Transaction, len(transactionPool))
+	copy(transactions, transactionPool)
+	previousHash := Chain[len(Chain)-1].Hash()
+	nonce := 0
+	for !ValidProof(transactions, previousHash, nonce) {
+		nonce++
+	}
+	return nonce
+}
+
+// Mining is run 'proof of work', create a block, and reward miner.
+func Mining(blockchainAddress string) {
+	AddTransaction(miningSender, blockchainAddress, miningReward)
+	previousHash := Chain[len(Chain)-1].Hash()
+	nonce := ProofOfWork()
+	CreateBlock(nonce, previousHash)
+}
+
+// CalculateTotalAmount is calculates the amount of Bitcoin you have.
+func CalculateTotalAmount(blockchainAddress string) float64 {
+	totalAmount := 0.0
+	for _, block := range Chain {
+		for _, ts := range block.Transactions {
+			if blockchainAddress == ts.RecipientAddress {
+				totalAmount += ts.Value
+			}
+			if blockchainAddress == ts.SenderBlockchainAddress {
+				totalAmount -= ts.Value
+			}
 		}
 	}
-	fmt.Printf("%s\n\n\n", strings.Repeat("*", 50))
+	return totalAmount
 }
