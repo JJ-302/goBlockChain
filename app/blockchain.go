@@ -33,19 +33,20 @@ const miningReward = 1.0
 func init() {
 	var initialHash []byte
 	hash := sha256.Sum256(initialHash)
-	CreateBlock(5, hex.EncodeToString(hash[:]))
+	CreateBlock(5, hex.EncodeToString(hash[:]), TransactionPool)
 }
 
 // CreateBlock is create a struct based on args and transactions.
 // And append created block to chain.
-func CreateBlock(nonce int, ph string) {
+func CreateBlock(nonce int, ph string, txs []Transaction) {
 	b := Block{
 		PreviousHash: ph,
 		Timestamp:    time.Now(),
 		Nonce:        nonce,
-		Transactions: TransactionPool,
+		Transactions: txs,
 	}
 	Chain = append(Chain, b)
+	TransactionPool = TransactionPool[:0]
 }
 
 func (b *Block) hash() string {
@@ -65,7 +66,7 @@ func validProof(txs []Transaction, ph string, nonce int) bool {
 	return validHash.MatchString(guessHash)
 }
 
-func proofOfWork() int {
+func proofOfWork() (int, []Transaction) {
 	transactions := make([]Transaction, len(TransactionPool))
 	copy(transactions, TransactionPool)
 	previousHash := Chain[len(Chain)-1].hash()
@@ -73,7 +74,7 @@ func proofOfWork() int {
 	for !validProof(transactions, previousHash, nonce) {
 		nonce++
 	}
-	return nonce
+	return nonce, transactions
 }
 
 // Mining is run 'proof of work', create a block, and reward miner.
@@ -83,8 +84,8 @@ func Mining(wallet *Wallet) {
 		log.Fatalln("exit!")
 	}
 	previousHash := Chain[len(Chain)-1].hash()
-	nonce := proofOfWork()
-	CreateBlock(nonce, previousHash)
+	nonce, txs := proofOfWork()
+	CreateBlock(nonce, previousHash, txs)
 }
 
 // CalculateTotalAmount is calculates the amount of Bitcoin you have.
