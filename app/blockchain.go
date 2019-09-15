@@ -9,13 +9,6 @@ import (
 	"time"
 )
 
-// Transaction within transaction value.
-type Transaction struct {
-	SenderBlockchainAddress string
-	RecipientAddress        string
-	Value                   float64
-}
-
 // Block is a mined some transactions.
 type Block struct {
 	PreviousHash string
@@ -59,21 +52,21 @@ func (b *Block) Hash() string {
 
 // AddTransaction is create a struct base on args.
 // And append created transaction to transactionPool.
-func AddTransaction(senderBlockchainAddress string, recipientAddress string, value float64) {
-	ts := Transaction{
-		SenderBlockchainAddress: senderBlockchainAddress,
-		RecipientAddress:        recipientAddress,
-		Value:                   value,
+func AddTransaction(senderAddress string, recipientAddress string, value float64) {
+	tx := Transaction{
+		SenderAddress:    senderAddress,
+		RecipientAddress: recipientAddress,
+		Value:            value,
 	}
-	transactionPool = append(transactionPool, ts)
+	transactionPool = append(transactionPool, tx)
 }
 
 // ValidProof is return whether was mining successfully.
-func ValidProof(transactions []Transaction, ph string, nonce int) bool {
+func ValidProof(txs []Transaction, ph string, nonce int) bool {
 	guessBlock := Block{
 		PreviousHash: ph,
 		Nonce:        nonce,
-		Transactions: transactions,
+		Transactions: txs,
 	}
 	guessHash := guessBlock.Hash()
 	validHash := regexp.MustCompile("^" + strings.Repeat("0", miningDifficulty))
@@ -104,12 +97,12 @@ func Mining(blockchainAddress string) {
 func CalculateTotalAmount(blockchainAddress string) float64 {
 	totalAmount := 0.0
 	for _, block := range Chain {
-		for _, ts := range block.Transactions {
-			if blockchainAddress == ts.RecipientAddress {
-				totalAmount += ts.Value
+		for _, tx := range block.Transactions {
+			if blockchainAddress == tx.RecipientAddress {
+				totalAmount += tx.Value
 			}
-			if blockchainAddress == ts.SenderBlockchainAddress {
-				totalAmount -= ts.Value
+			if blockchainAddress == tx.SenderAddress {
+				totalAmount -= tx.Value
 			}
 		}
 	}

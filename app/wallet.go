@@ -8,19 +8,9 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 
 	"golang.org/x/crypto/ripemd160"
 )
-
-// TransactionB is
-type TransactionB struct {
-	SenderPrivateKey          ecdsa.PrivateKey
-	SenderPublicKey           ecdsa.PublicKey
-	SenderBlockchainAddress   string
-	RecpientBlockchainAddress string
-	Value                     float64
-}
 
 // CreateKeyPair is
 func CreateKeyPair() *ecdsa.PrivateKey {
@@ -61,21 +51,14 @@ func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	return blockchainAddress
 }
 
-func (tx *TransactionB) hash() []byte {
-	txByte, _ := json.Marshal(tx)
-	sha256Encoder := sha256.New()
-	hash := sha256Encoder.Sum(txByte)
-	return hash
-}
-
 // GenerateSignature is
 func GenerateSignature(senPriKey ecdsa.PrivateKey, senBA string, recBA string, val float64) string {
-	tx := TransactionB{
-		SenderPrivateKey:          senPriKey,
-		SenderPublicKey:           senPriKey.PublicKey,
-		SenderBlockchainAddress:   senBA,
-		RecpientBlockchainAddress: recBA,
-		Value:                     val,
+	tx := Transaction{
+		SenderPrivateKey: senPriKey,
+		SenderPublicKey:  senPriKey.PublicKey,
+		SenderAddress:    senBA,
+		RecipientAddress: recBA,
+		Value:            val,
 	}
 	var opts crypto.SignerOpts
 	message := tx.hash()
