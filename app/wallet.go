@@ -30,7 +30,7 @@ func GenerateBlockchainAddress() string {
 	ripemd160Encoder.Write(sha256Digest)
 	ripemd160Digest := ripemd160Encoder.Sum(nil)
 
-	networkByte := []byte("11")
+	networkByte := []byte("00")
 	networkBitcoinPubKey := append(networkByte, ripemd160Digest...)
 	networkBitcoinPubKeyHex := hex.EncodeToString(networkBitcoinPubKey)
 
