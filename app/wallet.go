@@ -72,16 +72,15 @@ func generateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 }
 
 // GenerateSignature retuens signature.
-func (wallet Wallet) GenerateSignature(recBA string, val float64) *Signature {
-	tx := Transaction{
-		SenderPrivateKey: wallet.PrivateKey,
-		SenderPublicKey:  wallet.PublicKey,
-		SenderAddress:    wallet.BlockchainAddress,
-		RecipientAddress: recBA,
-		Value:            val,
-	}
+func (wallet *Wallet) GenerateSignature(recBA string, val float64) *Signature {
+	tx := CreateTransaction(wallet.BlockchainAddress, recBA, val)
 	message := tx.hash()
 	var sign Signature
 	sign.X, sign.Y, _ = ecdsa.Sign(rand.Reader, &wallet.PrivateKey, message)
 	return &sign
+}
+
+func (signature *Signature) verifyTransactionSignature(senPubKey *ecdsa.PublicKey, tx Transaction) bool {
+	message := tx.hash()
+	return ecdsa.Verify(senPubKey, message, signature.X, signature.Y)
 }
