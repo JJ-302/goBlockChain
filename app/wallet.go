@@ -1,25 +1,36 @@
 package app
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 
 	"golang.org/x/crypto/ripemd160"
 )
 
-func createKeyPair() *ecdsa.PrivateKey {
+// TransactionB is
+type TransactionB struct {
+	SenderPrivateKey          ecdsa.PrivateKey
+	SenderPublicKey           ecdsa.PublicKey
+	SenderBlockchainAddress   string
+	RecpientBlockchainAddress string
+	Value                     float64
+}
+
+// CreateKeyPair is
+func CreateKeyPair() *ecdsa.PrivateKey {
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	return privateKey
 }
 
 // GenerateBlockchainAddress is return blockchainAddress.
 // blockchainAddress is created by publicKey.
-func GenerateBlockchainAddress() string {
-	privateKey := createKeyPair()
+func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	publicKey := privateKey.PublicKey
 	publicKeyByte := elliptic.Marshal(publicKey.Curve, publicKey.X, publicKey.Y)
 	sha256Encoder := sha256.New()
@@ -48,4 +59,26 @@ func GenerateBlockchainAddress() string {
 	blockchainAddress := base64.StdEncoding.EncodeToString([]byte(addressHex))
 
 	return blockchainAddress
+}
+
+func (tx *TransactionB) hash() []byte {
+	txByte, _ := json.Marshal(tx)
+	sha256Encoder := sha256.New()
+	hash := sha256Encoder.Sum(txByte)
+	return hash
+}
+
+// GenerateSignature is
+func GenerateSignature(senPriKey ecdsa.PrivateKey, senBA string, recBA string, val float64) string {
+	tx := TransactionB{
+		SenderPrivateKey:          senPriKey,
+		SenderPublicKey:           senPriKey.PublicKey,
+		SenderBlockchainAddress:   senBA,
+		RecpientBlockchainAddress: recBA,
+		Value:                     val,
+	}
+	var opts crypto.SignerOpts
+	message := tx.hash()
+	privateKeySign, _ := senPriKey.Sign(rand.Reader, message, opts)
+	return hex.EncodeToString(privateKeySign)
 }
