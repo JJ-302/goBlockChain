@@ -1,26 +1,46 @@
 package app
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"math/big"
 
 	"golang.org/x/crypto/ripemd160"
 )
 
-// CreateKeyPair create privateKey and publicKey pair.
-func CreateKeyPair() *ecdsa.PrivateKey {
+// Wallet represents wallet for bitcoin.
+type Wallet struct {
+	PrivateKey        ecdsa.PrivateKey
+	PublicKey         ecdsa.PublicKey
+	BlockchainAddress string
+}
+
+// Signature is result it signs using the privateKey.
+type Signature struct {
+	X, Y *big.Int
+}
+
+// CreateWallet create wallet for bitcoin.
+func CreateWallet() *Wallet {
+	privateKey := createKeyPair()
+	wallet := Wallet{
+		PrivateKey:        *privateKey,
+		PublicKey:         privateKey.PublicKey,
+		BlockchainAddress: generateBlockchainAddress(*privateKey),
+	}
+	return &wallet
+}
+
+func createKeyPair() *ecdsa.PrivateKey {
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	return privateKey
 }
 
-// GenerateBlockchainAddress returns blockchainAddress.
-// blockchainAddress is created by publicKey.
-func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
+func generateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	publicKey := privateKey.PublicKey
 	publicKeyByte := elliptic.Marshal(publicKey.Curve, publicKey.X, publicKey.Y)
 	sha256Encoder := sha256.New()
@@ -52,16 +72,16 @@ func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 }
 
 // GenerateSignature retuens signature.
-func GenerateSignature(senPriKey ecdsa.PrivateKey, senBA string, recBA string, val float64) string {
+func (wallet Wallet) GenerateSignature(recBA string, val float64) *Signature {
 	tx := Transaction{
-		SenderPrivateKey: senPriKey,
-		SenderPublicKey:  senPriKey.PublicKey,
-		SenderAddress:    senBA,
+		SenderPrivateKey: wallet.PrivateKey,
+		SenderPublicKey:  wallet.PublicKey,
+		SenderAddress:    wallet.BlockchainAddress,
 		RecipientAddress: recBA,
 		Value:            val,
 	}
-	var opts crypto.SignerOpts
 	message := tx.hash()
-	privateKeySign, _ := senPriKey.Sign(rand.Reader, message, opts)
-	return hex.EncodeToString(privateKeySign)
+	var sign Signature
+	sign.X, sign.Y, _ = ecdsa.Sign(rand.Reader, &wallet.PrivateKey, message)
+	return &sign
 }
