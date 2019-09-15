@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"regexp"
 	"strings"
 	"time"
@@ -19,10 +20,14 @@ type Block struct {
 
 // Chain is a bucket to append mined block.
 var Chain []Block
-var transactionPool []Transaction
+
+// TransactionPool is
+var TransactionPool []Transaction
 
 const miningDifficulty = 3
-const miningSender = "The BlockChain"
+
+// MiningSender is send reward to miner.
+const MiningSender = "The BlockChain"
 const miningReward = 1.0
 
 func init() {
@@ -38,7 +43,7 @@ func CreateBlock(nonce int, ph string) {
 		PreviousHash: ph,
 		Timestamp:    time.Now(),
 		Nonce:        nonce,
-		Transactions: transactionPool,
+		Transactions: TransactionPool,
 	}
 	Chain = append(Chain, b)
 }
@@ -47,17 +52,6 @@ func (b *Block) hash() string {
 	bbyte, _ := json.Marshal(b)
 	hash := sha256.Sum256(bbyte)
 	return hex.EncodeToString(hash[:])
-}
-
-// AddTransaction is create a struct base on args.
-// And append created transaction to transactionPool.
-func AddTransaction(senderAddress string, recipientAddress string, value float64) {
-	tx := Transaction{
-		SenderAddress:    senderAddress,
-		RecipientAddress: recipientAddress,
-		Value:            value,
-	}
-	transactionPool = append(transactionPool, tx)
 }
 
 func validProof(txs []Transaction, ph string, nonce int) bool {
@@ -72,8 +66,8 @@ func validProof(txs []Transaction, ph string, nonce int) bool {
 }
 
 func proofOfWork() int {
-	transactions := make([]Transaction, len(transactionPool))
-	copy(transactions, transactionPool)
+	transactions := make([]Transaction, len(TransactionPool))
+	copy(transactions, TransactionPool)
 	previousHash := Chain[len(Chain)-1].hash()
 	nonce := 0
 	for !validProof(transactions, previousHash, nonce) {
@@ -83,8 +77,11 @@ func proofOfWork() int {
 }
 
 // Mining is run 'proof of work', create a block, and reward miner.
-func Mining(blockchainAddress string) {
-	AddTransaction(miningSender, blockchainAddress, miningReward)
+func Mining(wallet *Wallet) {
+	tx := CreateTransaction(MiningSender, wallet.BlockchainAddress, miningReward)
+	if !tx.AddTransaction(wallet) {
+		log.Fatalln("exit!")
+	}
 	previousHash := Chain[len(Chain)-1].hash()
 	nonce := proofOfWork()
 	CreateBlock(nonce, previousHash)
