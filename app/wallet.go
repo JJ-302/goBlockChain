@@ -12,13 +12,13 @@ import (
 	"golang.org/x/crypto/ripemd160"
 )
 
-// CreateKeyPair is
+// CreateKeyPair create privateKey and publicKey pair.
 func CreateKeyPair() *ecdsa.PrivateKey {
 	privateKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	return privateKey
 }
 
-// GenerateBlockchainAddress is return blockchainAddress.
+// GenerateBlockchainAddress returns blockchainAddress.
 // blockchainAddress is created by publicKey.
 func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	publicKey := privateKey.PublicKey
@@ -51,7 +51,7 @@ func GenerateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	return blockchainAddress
 }
 
-// GenerateSignature is
+// GenerateSignature retuens signature.
 func GenerateSignature(senPriKey ecdsa.PrivateKey, senBA string, recBA string, val float64) string {
 	tx := Transaction{
 		SenderPrivateKey: senPriKey,

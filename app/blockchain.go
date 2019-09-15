@@ -43,8 +43,7 @@ func CreateBlock(nonce int, ph string) {
 	Chain = append(Chain, b)
 }
 
-// Hash is encrypt a block by sha256.
-func (b *Block) Hash() string {
+func (b *Block) hash() string {
 	bbyte, _ := json.Marshal(b)
 	hash := sha256.Sum256(bbyte)
 	return hex.EncodeToString(hash[:])
@@ -61,25 +60,23 @@ func AddTransaction(senderAddress string, recipientAddress string, value float64
 	transactionPool = append(transactionPool, tx)
 }
 
-// ValidProof is return whether was mining successfully.
-func ValidProof(txs []Transaction, ph string, nonce int) bool {
+func validProof(txs []Transaction, ph string, nonce int) bool {
 	guessBlock := Block{
 		PreviousHash: ph,
 		Nonce:        nonce,
 		Transactions: txs,
 	}
-	guessHash := guessBlock.Hash()
+	guessHash := guessBlock.hash()
 	validHash := regexp.MustCompile("^" + strings.Repeat("0", miningDifficulty))
 	return validHash.MatchString(guessHash)
 }
 
-// ProofOfWork is return nonce when success mining.
-func ProofOfWork() int {
+func proofOfWork() int {
 	transactions := make([]Transaction, len(transactionPool))
 	copy(transactions, transactionPool)
-	previousHash := Chain[len(Chain)-1].Hash()
+	previousHash := Chain[len(Chain)-1].hash()
 	nonce := 0
-	for !ValidProof(transactions, previousHash, nonce) {
+	for !validProof(transactions, previousHash, nonce) {
 		nonce++
 	}
 	return nonce
@@ -88,8 +85,8 @@ func ProofOfWork() int {
 // Mining is run 'proof of work', create a block, and reward miner.
 func Mining(blockchainAddress string) {
 	AddTransaction(miningSender, blockchainAddress, miningReward)
-	previousHash := Chain[len(Chain)-1].Hash()
-	nonce := ProofOfWork()
+	previousHash := Chain[len(Chain)-1].hash()
+	nonce := proofOfWork()
 	CreateBlock(nonce, previousHash)
 }
 

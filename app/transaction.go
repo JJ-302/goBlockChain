@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 )
 
-// Transaction is
+// Transaction is bitcoin's transaction info.
 type Transaction struct {
 	SenderPrivateKey ecdsa.PrivateKey
 	SenderPublicKey  ecdsa.PublicKey
