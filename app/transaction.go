@@ -15,7 +15,8 @@ type Transaction struct {
 func (tx *Transaction) hash() []byte {
 	txByte, _ := json.Marshal(tx)
 	sha256Encoder := sha256.New()
-	hash := sha256Encoder.Sum(txByte)
+	sha256Encoder.Write(txByte)
+	hash := sha256Encoder.Sum(nil)
 	return hash
 }
 
