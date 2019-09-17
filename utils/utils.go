@@ -21,7 +21,7 @@ func Printblock() {
 		fmt.Println("Transactions")
 		fmt.Println(strings.Repeat("-", 50))
 		for _, v := range v.Transactions {
-			fmt.Printf(formatB, "SenderBlockchainAddress", v.SenderBlockchainAddress)
+			fmt.Printf(formatB, "SenderBlockchainAddress", v.SenderAddress)
 			fmt.Printf(formatB, "RecipientAddress", v.RecipientAddress)
 			fmt.Printf(formatB, "Value", v.Value)
 			fmt.Println(strings.Repeat("-", 50))

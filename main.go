@@ -9,18 +9,28 @@ import (
 
 func main() {
 	utils.LoggingSettings(config.Config.LogFile)
-	myBlockchainAddress := "myBlockchainAddress"
+	// myBlockchainAddress := "myBlockchainAddress"
 
-	app.AddTransaction("C", "D", 2.0)
-	app.Mining(myBlockchainAddress)
+	wallet1 := app.CreateWallet()
+	wallet2 := app.CreateWallet()
+	walletM := app.CreateWallet()
+
+	tx := app.CreateTransaction(wallet1.BlockchainAddress, wallet2.BlockchainAddress, 1.5)
+	result := tx.AddTransaction(wallet1)
+
+	fmt.Println(result)
+
+	app.Mining(walletM)
 	utils.Printblock()
 
-	app.AddTransaction("E", "F", 3.0)
-	app.AddTransaction("E", "G", 3.0)
-	app.Mining(myBlockchainAddress)
+	tx = app.CreateTransaction(wallet1.BlockchainAddress, wallet2.BlockchainAddress, 4.5)
+	result = tx.AddTransaction(wallet1)
+
+	fmt.Println(result)
+	app.Mining(walletM)
 	utils.Printblock()
 
-	fmt.Println("my", app.CalculateTotalAmount(myBlockchainAddress))
-	fmt.Println("E", app.CalculateTotalAmount("E"))
-	fmt.Println("F", app.CalculateTotalAmount("F"))
+	fmt.Println("1", app.CalculateTotalAmount(wallet1.BlockchainAddress))
+	fmt.Println("2", app.CalculateTotalAmount(wallet2.BlockchainAddress))
+	fmt.Println("M", app.CalculateTotalAmount(walletM.BlockchainAddress))
 }

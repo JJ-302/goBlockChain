@@ -4,17 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"regexp"
 	"strings"
 	"time"
 )
-
-// Transaction within transaction value.
-type Transaction struct {
-	SenderBlockchainAddress string
-	RecipientAddress        string
-	Value                   float64
-}
 
 // Block is a mined some transactions.
 type Block struct {
@@ -26,90 +20,84 @@ type Block struct {
 
 // Chain is a bucket to append mined block.
 var Chain []Block
-var transactionPool []Transaction
+
+// TransactionPool is
+var TransactionPool []Transaction
 
 const miningDifficulty = 3
-const miningSender = "The BlockChain"
+
+// MiningSender is send reward to miner.
+const MiningSender = "The BlockChain"
 const miningReward = 1.0
 
 func init() {
 	var initialHash []byte
 	hash := sha256.Sum256(initialHash)
-	CreateBlock(5, hex.EncodeToString(hash[:]))
+	CreateBlock(5, hex.EncodeToString(hash[:]), TransactionPool)
 }
 
 // CreateBlock is create a struct based on args and transactions.
 // And append created block to chain.
-func CreateBlock(nonce int, ph string) {
+func CreateBlock(nonce int, ph string, txs []Transaction) {
 	b := Block{
 		PreviousHash: ph,
 		Timestamp:    time.Now(),
 		Nonce:        nonce,
-		Transactions: transactionPool,
+		Transactions: txs,
 	}
 	Chain = append(Chain, b)
+	TransactionPool = TransactionPool[:0]
 }
 
-// Hash is encrypt a block by sha256.
-func (b *Block) Hash() string {
+func (b *Block) hash() string {
 	bbyte, _ := json.Marshal(b)
 	hash := sha256.Sum256(bbyte)
 	return hex.EncodeToString(hash[:])
 }
 
-// AddTransaction is create a struct base on args.
-// And append created transaction to transactionPool.
-func AddTransaction(senderBlockchainAddress string, recipientAddress string, value float64) {
-	ts := Transaction{
-		SenderBlockchainAddress: senderBlockchainAddress,
-		RecipientAddress:        recipientAddress,
-		Value:                   value,
-	}
-	transactionPool = append(transactionPool, ts)
-}
-
-// ValidProof is return whether was mining successfully.
-func ValidProof(transactions []Transaction, ph string, nonce int) bool {
+func validProof(txs []Transaction, ph string, nonce int) bool {
 	guessBlock := Block{
 		PreviousHash: ph,
 		Nonce:        nonce,
-		Transactions: transactions,
+		Transactions: txs,
 	}
-	guessHash := guessBlock.Hash()
+	guessHash := guessBlock.hash()
 	validHash := regexp.MustCompile("^" + strings.Repeat("0", miningDifficulty))
 	return validHash.MatchString(guessHash)
 }
 
-// ProofOfWork is return nonce when success mining.
-func ProofOfWork() int {
-	transactions := make([]Transaction, len(transactionPool))
-	copy(transactions, transactionPool)
-	previousHash := Chain[len(Chain)-1].Hash()
+func proofOfWork() (int, []Transaction) {
+	transactions := make([]Transaction, len(TransactionPool))
+	copy(transactions, TransactionPool)
+	previousHash := Chain[len(Chain)-1].hash()
 	nonce := 0
-	for !ValidProof(transactions, previousHash, nonce) {
+	for !validProof(transactions, previousHash, nonce) {
 		nonce++
 	}
-	return nonce
+	return nonce, transactions
 }
 
 // Mining is run 'proof of work', create a block, and reward miner.
-func Mining(blockchainAddress string) {
-	AddTransaction(miningSender, blockchainAddress, miningReward)
-	previousHash := Chain[len(Chain)-1].Hash()
-	nonce := ProofOfWork()
-	CreateBlock(nonce, previousHash)
+func Mining(wallet *Wallet) {
+	tx := CreateTransaction(MiningSender, wallet.BlockchainAddress, miningReward)
+	if !tx.AddTransaction(wallet) {
+		log.Fatalln("exit!")
+	}
+	previousHash := Chain[len(Chain)-1].hash()
+	nonce, txs := proofOfWork()
+	CreateBlock(nonce, previousHash, txs)
 }
 
 // CalculateTotalAmount is calculates the amount of Bitcoin you have.
 func CalculateTotalAmount(blockchainAddress string) float64 {
 	totalAmount := 0.0
 	for _, block := range Chain {
-		for _, ts := range block.Transactions {
-			if blockchainAddress == ts.RecipientAddress {
-				totalAmount += ts.Value
+		for _, tx := range block.Transactions {
+			if blockchainAddress == tx.RecipientAddress {
+				totalAmount += tx.Value
 			}
-			if blockchainAddress == ts.SenderBlockchainAddress {
-				totalAmount -= ts.Value
+			if blockchainAddress == tx.SenderAddress {
+				totalAmount -= tx.Value
 			}
 		}
 	}
