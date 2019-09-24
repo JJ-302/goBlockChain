@@ -30,12 +30,6 @@ const miningDifficulty = 3
 const MiningSender = "The BlockChain"
 const miningReward = 1.0
 
-func init() {
-	var initialHash []byte
-	hash := sha256.Sum256(initialHash)
-	CreateBlock(5, hex.EncodeToString(hash[:]), TransactionPool)
-}
-
 // CreateBlock is create a struct based on args and transactions.
 // And append created block to chain.
 func CreateBlock(nonce int, ph string, txs []Transaction) {

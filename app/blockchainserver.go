@@ -1,11 +1,19 @@
 package app
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
-	"projects/goDiary/config"
+	"projects/goBlockChain/config"
 )
+
+func init() {
+	var initialHash []byte
+	hash := sha256.Sum256(initialHash)
+	CreateBlock(5, hex.EncodeToString(hash[:]), TransactionPool)
+}
 
 // StartBlockchainServer start blockchain node.
 func StartBlockchainServer() error {
