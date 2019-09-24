@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+  {{ range $i, $chain := . }}
+    <div class="block">
+      <div class="block__header">
+        Chain:{{ index $i }}
+      </div>
+      <div class="block__previousHash">
+        <p>PreviousHash : {{ .PreviousHash }}</p>
+      </div>
+      <div class="block__Timestamp">
+        <p>Timestamp : {{ .Timestamp }}</p>
+      </div>
+      <div class="block__nonce">
+        <p>Nonce : {{ .Nonce }}</p>
+      </div>
+      <div class="transaction">
+        {{ range $ii, $transaction := .Transactions}}
+          <div class="transaction__header">
+            Transaction:
+            {{ index $ii }}
+          </div>
+          <div class="transaction__recipientBlockchainAddress">
+            <p>RecipientBlockchainAddress : {{ .SenderAddress }}</p>
+          </div>
+          <div class="transaction__senderBlockchainAddress">
+            <p>SenderBlockchainAddress : {{ .RecipientAddress }}</p>
+          </div>
+          <div class="transaction__value">
+            <p>Value : {{ .Value }}</p>
+          </div>
+        {{ end }}
+      </div>
+    </div>
+  {{ end }}
+</body>
+</html>
