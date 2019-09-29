@@ -79,6 +79,31 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+
+	if r.Method == "POST" {
+		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		body := make([]byte, length)
+		length, err = r.Body.Read(body)
+
+		var wallet Wallet
+		err = json.Unmarshal(body[:length], &wallet)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		amount := CalculateTotalAmount(wallet.BlockchainAddress)
+		jsonValue, _ := json.Marshal(map[string]float64{"result": amount})
+		w.Write(jsonValue)
+	}
+}
+
 func writeResponse(w http.ResponseWriter, result bool) {
 	jsonValue, _ := json.Marshal(map[string]bool{"result": result})
 	w.Write(jsonValue)
@@ -99,5 +124,6 @@ func StartBlockchainServer() error {
 	http.HandleFunc("/wallet", createWalletHandler)
 	http.HandleFunc("/chain", getChainHandler)
 	http.HandleFunc("/transaction", transactionHandler)
+	http.HandleFunc("/calc", calcTotalAmountHandler)
 	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), nil)
 }
