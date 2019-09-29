@@ -62,15 +62,25 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		_, isExist := WalletPool[tx.RecipientAddress]
+		if !isExist {
+			writeResponse(w, false)
+			return
+		}
+
 		wallet := WalletPool[tx.SenderAddress]
 		if tx.AddTransaction(&wallet) {
-			jsonValue, _ := json.Marshal(map[string]bool{"result": true})
-			w.Write(jsonValue)
+			writeResponse(w, true)
 		} else {
-			jsonValue, _ := json.Marshal(map[string]bool{"result": false})
-			w.Write(jsonValue)
+			writeResponse(w, false)
 		}
 	}
+}
+
+func writeResponse(w http.ResponseWriter, result bool) {
+	jsonValue, _ := json.Marshal(map[string]bool{"result": result})
+	w.Write(jsonValue)
 }
 
 // StartBlockchainServer start blockchain node.
