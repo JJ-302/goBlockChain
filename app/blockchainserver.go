@@ -21,32 +21,29 @@ func init() {
 
 func getChainHandler(w http.ResponseWriter, r *http.Request) {
 	templates := template.Must(template.ParseFiles("app/views/chain.html"))
-	err := templates.Execute(w, Chain)
-	if err != nil {
+
+	if err := templates.Execute(w, Chain); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
 
 func createWalletHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-	wallet := CreateWallet()
-	jsonValue, _ := json.Marshal(wallet)
+	toAllowAccess(w)
+	jsonValue, _ := json.Marshal(CreateWallet())
 	w.Write(jsonValue)
 }
 
 func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		templates := template.Must(template.ParseFiles("app/views/transaction.html"))
-		err := templates.Execute(w, TransactionPool)
-		if err != nil {
+
+		if err := templates.Execute(w, TransactionPool); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	toAllowAccess(w)
 
 	if r.Method == "POST" {
 		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
@@ -58,20 +55,18 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 		length, err = r.Body.Read(body)
 
 		var tx Transaction
-		err = json.Unmarshal(body[:length], &tx)
-		if err != nil {
+
+		if err = json.Unmarshal(body[:length], &tx); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		_, isExist := WalletPool[tx.RecipientAddress]
-		if !isExist {
+		if _, isExist := WalletPool[tx.RecipientAddress]; !isExist {
 			writeResponse(w, false)
 			return
 		}
 
-		wallet := WalletPool[tx.SenderAddress]
-		if tx.AddTransaction(&wallet) {
+		if wallet := WalletPool[tx.SenderAddress]; tx.AddTransaction(&wallet) {
 			writeResponse(w, true)
 		} else {
 			writeResponse(w, false)
@@ -80,8 +75,7 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	toAllowAccess(w)
 
 	if r.Method == "POST" {
 		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
@@ -93,8 +87,8 @@ func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
 		length, err = r.Body.Read(body)
 
 		var wallet Wallet
-		err = json.Unmarshal(body[:length], &wallet)
-		if err != nil {
+
+		if err = json.Unmarshal(body[:length], &wallet); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -102,6 +96,11 @@ func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
 		jsonValue, _ := json.Marshal(map[string]float64{"result": amount})
 		w.Write(jsonValue)
 	}
+}
+
+func toAllowAccess(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 }
 
 func writeResponse(w http.ResponseWriter, result bool) {
