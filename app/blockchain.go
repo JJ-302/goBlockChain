@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -73,6 +74,10 @@ func proofOfWork() (int, []Transaction) {
 
 // Mining is run 'proof of work', create a block, and reward miner.
 func Mining(wallet *Wallet) {
+	if len(TransactionPool) == 0 {
+		fmt.Println("Transaction is empty.")
+		return
+	}
 	tx := CreateTransaction(MiningSender, wallet.BlockchainAddress, miningReward)
 	if !tx.AddTransaction(wallet) {
 		log.Fatalln("exit!")
@@ -80,6 +85,7 @@ func Mining(wallet *Wallet) {
 	previousHash := Chain[len(Chain)-1].hash()
 	nonce, txs := proofOfWork()
 	CreateBlock(nonce, previousHash, txs)
+	fmt.Println("Mining is successfully")
 }
 
 // CalculateTotalAmount is calculates the amount of Bitcoin you have.
