@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"projects/goBlockChain/config"
 	"strconv"
+	"time"
 )
 
 func init() {
@@ -81,6 +82,15 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 func writeResponse(w http.ResponseWriter, result bool) {
 	jsonValue, _ := json.Marshal(map[string]bool{"result": result})
 	w.Write(jsonValue)
+}
+
+// StartMining is mining every 10sec.
+func StartMining(wallet *Wallet) {
+	fmt.Println("mining to listen on")
+	for {
+		Mining(wallet)
+		time.Sleep(10000 * time.Millisecond)
+	}
 }
 
 // StartBlockchainServer start blockchain node.
