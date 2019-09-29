@@ -24,6 +24,9 @@ type Signature struct {
 	X, Y *big.Int
 }
 
+// WalletPool is an instead of DB for wallet.
+var WalletPool = make(map[string]Wallet)
+
 // CreateWallet create wallet for bitcoin.
 func CreateWallet() *Wallet {
 	privateKey := createKeyPair()
@@ -32,6 +35,7 @@ func CreateWallet() *Wallet {
 		PublicKey:         privateKey.PublicKey,
 		BlockchainAddress: generateBlockchainAddress(*privateKey),
 	}
+	WalletPool[wallet.BlockchainAddress] = wallet
 	return &wallet
 }
 
