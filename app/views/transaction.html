@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <p>Transactions</p>
+  <div class="transaction">
+    {{ range $i, $transaction := . }}
+      <div class="transaction__header">
+        Transaction: {{ index $i }}
+      </div>
+      <div class="transaction__recipientBlockchainAddress">
+        <p>RecipientBlockchainAddress : {{ .SenderAddress }}</p>
+      </div>
+      <div class="transaction__senderBlockchainAddress">
+        <p>SenderBlockchainAddress : {{ .RecipientAddress }}</p>
+      </div>
+      <div class="transaction__value">
+        <p>Value : {{ .Value }}</p>
+      </div>
+    {{ end }}
+  </div>
+</body>
+</html>

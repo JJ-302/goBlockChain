@@ -9,6 +9,7 @@ import (
 
 // Configlist has some info for application.
 type Configlist struct {
+	Port    int
 	LogFile string
 }
 
@@ -23,6 +24,7 @@ func init() {
 	}
 
 	Config = Configlist{
+		Port:    cfg.Section("web").Key("port").MustInt(),
 		LogFile: cfg.Section("goblockchain").Key("log_file").String(),
 	}
 }
