@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"projects/goBlockChain/config"
 	"strconv"
 	"time"
 )
@@ -118,11 +117,11 @@ func StartMining(wallet *Wallet) {
 }
 
 // StartBlockchainServer start blockchain node.
-func StartBlockchainServer() error {
-	log.Println("Port:8080 to listen on")
+func StartBlockchainServer(port int) error {
+	log.Printf("Port: %v to listen on", port)
 	http.HandleFunc("/wallet", createWalletHandler)
 	http.HandleFunc("/chain", getChainHandler)
 	http.HandleFunc("/transaction", transactionHandler)
 	http.HandleFunc("/calc", calcTotalAmountHandler)
-	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), nil)
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
