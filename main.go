@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"projects/goBlockChain/app"
 	"projects/goBlockChain/config"
@@ -15,10 +14,9 @@ func main() {
 	port := flag.Int("int", 8080, "port")
 	flag.Parse()
 
-	addr := utils.GetHost()
-	fmt.Println(utils.FindNeighbours(addr, *port, 0, 2, 8080, 8082))
-
 	minerWallet := app.CreateWallet()
+
+	go app.SetNeighbours(*port)
 	go app.StartMining(minerWallet)
 
 	log.Println(app.StartBlockchainServer(*port))

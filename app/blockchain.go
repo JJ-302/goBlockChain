@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"projects/goBlockChain/utils"
 	"regexp"
 	"strings"
 	"time"
@@ -25,11 +26,28 @@ var Chain []Block
 // TransactionPool is
 var TransactionPool []Transaction
 
+var neighbours []string
+
 const miningDifficulty = 3
+const portRangeStart = 8080
+const portRangeEnd = 8082
+const ipRangeStart = 0
+const ipRangeEnd = 1
+const neighboursSyncTimeSec = 20
 
 // MiningSender is send reward to miner.
 const MiningSender = "The BlockChain"
 const miningReward = 1.0
+
+// SetNeighbours is
+func SetNeighbours(port int) {
+	addr := utils.GetHost()
+	for {
+		neighbours = utils.FindNeighbours(addr, port, ipRangeStart, ipRangeEnd, portRangeStart, portRangeEnd)
+		log.Println("neighbours: ", neighbours)
+		time.Sleep(neighboursSyncTimeSec * time.Second)
+	}
+}
 
 // CreateBlock is create a struct based on args and transactions.
 // And append created block to chain.
