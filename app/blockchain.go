@@ -26,7 +26,8 @@ var Chain []Block
 // TransactionPool is
 var TransactionPool []Transaction
 
-var neighbours []string
+// Neighbours is neighbour node Address.
+var Neighbours []string
 
 const miningDifficulty = 3
 const portRangeStart = 8080
@@ -43,8 +44,8 @@ const miningReward = 1.0
 func SetNeighbours(port int) {
 	addr := utils.GetHost()
 	for {
-		neighbours = utils.FindNeighbours(addr, port, ipRangeStart, ipRangeEnd, portRangeStart, portRangeEnd)
-		log.Println("neighbours: ", neighbours)
+		Neighbours = utils.FindNeighbours(addr, port, ipRangeStart, ipRangeEnd, portRangeStart, portRangeEnd)
+		log.Println("neighbours: ", Neighbours)
 		time.Sleep(neighboursSyncTimeSec * time.Second)
 	}
 }
