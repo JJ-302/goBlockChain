@@ -34,6 +34,10 @@ func (tx *Transaction) AddTransaction(wallet *Wallet) bool {
 	return false
 }
 
+func (tx *Transaction) syncTransaction() {
+	TransactionPool = append(TransactionPool, *tx)
+}
+
 // CreateTransaction returns new trunsaction struct.
 func CreateTransaction(senAdd string, recAdd string, val float64) *Transaction {
 	tx := Transaction{

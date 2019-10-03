@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +12,8 @@ import (
 	"strconv"
 	"time"
 )
+
+const methodPost = "POST"
 
 func init() {
 	var initialHash []byte
@@ -44,7 +47,7 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 
 	toAllowAccess(w)
 
-	if r.Method == "POST" {
+	if r.Method == methodPost {
 		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -66,6 +69,15 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if wallet := WalletPool[tx.SenderAddress]; tx.AddTransaction(&wallet) {
+			for _, node := range Neighbours {
+				url := "http://" + node + "/sync"
+				resp, err := http.Post(url, "application/json", bytes.NewBuffer(body[:length]))
+				log.Println(resp)
+				if err != nil {
+					log.Println(err)
+				}
+				defer resp.Body.Close()
+			}
 			writeResponse(w, true)
 		} else {
 			writeResponse(w, false)
@@ -73,10 +85,31 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func syncTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		body := make([]byte, length)
+		length, err = r.Body.Read(body)
+
+		var tx Transaction
+
+		if err = json.Unmarshal(body[:length], &tx); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Println(tx)
+		tx.syncTransaction()
+	}
+}
+
 func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
 	toAllowAccess(w)
 
-	if r.Method == "POST" {
+	if r.Method == methodPost {
 		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -122,6 +155,7 @@ func StartBlockchainServer(port int) error {
 	http.HandleFunc("/wallet", createWalletHandler)
 	http.HandleFunc("/chain", getChainHandler)
 	http.HandleFunc("/transaction", transactionHandler)
+	http.HandleFunc("/sync", syncTransactionHandler)
 	http.HandleFunc("/calc", calcTotalAmountHandler)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }
