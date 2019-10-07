@@ -25,7 +25,7 @@ type Block struct {
 // Chain is a bucket to append mined block.
 var Chain []Block
 
-// TransactionPool is
+// TransactionPool is slice of a transaction that has not been mined.
 var TransactionPool []Transaction
 
 // Neighbours is neighbour node Address.
@@ -42,7 +42,7 @@ const neighboursSyncTimeSec = 20
 const MiningSender = "The BlockChain"
 const miningReward = 1.0
 
-// SetNeighbours is
+// SetNeighbours searches node at regular intervals.
 func SetNeighbours(port int) {
 	addr := utils.GetHost()
 	for {
@@ -109,7 +109,7 @@ func Mining(wallet *Wallet) {
 		return
 	}
 	tx := CreateTransaction(MiningSender, wallet.BlockchainAddress, miningReward)
-	if !tx.AddTransaction(wallet) {
+	if !tx.addTransaction(wallet) {
 		log.Fatalln("exit!")
 	}
 	previousHash := Chain[len(Chain)-1].hash()
@@ -144,6 +144,7 @@ func validChain(chain []Block) bool {
 	return true
 }
 
+// ResolveConflicts valid neighbour node's blockchain.
 func ResolveConflicts() bool {
 	maxLength := len(Chain)
 	for _, node := range Neighbours {
@@ -165,7 +166,6 @@ func ResolveConflicts() bool {
 			log.Println(err)
 			return false
 		}
-		fmt.Println(respChain)
 		chainLength := len(respChain)
 		if chainLength > maxLength && validChain(respChain) {
 			maxLength = chainLength

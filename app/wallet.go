@@ -75,8 +75,7 @@ func generateBlockchainAddress(privateKey ecdsa.PrivateKey) string {
 	return blockchainAddress
 }
 
-// GenerateSignature retuens signature.
-func (wallet *Wallet) GenerateSignature(recBA string, val float64) *Signature {
+func (wallet *Wallet) generateSignature(recBA string, val float64) *Signature {
 	tx := CreateTransaction(wallet.BlockchainAddress, recBA, val)
 	message := tx.hash()
 	var sign Signature

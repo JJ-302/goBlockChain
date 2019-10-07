@@ -45,17 +45,9 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	toAllowAccess(w)
 
 	if r.Method == methodPost {
-		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := make([]byte, length)
-		length, err = r.Body.Read(body)
-
 		var tx Transaction
-
-		if err = json.Unmarshal(body[:length], &tx); err != nil {
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &tx); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -65,11 +57,10 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if wallet := WalletPool[tx.SenderAddress]; tx.AddTransaction(&wallet) {
+		if wallet := WalletPool[tx.SenderAddress]; tx.addTransaction(&wallet) {
 			for _, node := range Neighbours {
 				url := "http://" + node + "/sync"
-				resp, err := http.Post(url, "application/json", bytes.NewBuffer(body[:length]))
-				log.Println(resp)
+				resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 				if err != nil {
 					log.Println(err)
 				}
@@ -84,17 +75,9 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 
 func syncTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == methodPost {
-		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := make([]byte, length)
-		length, err = r.Body.Read(body)
-
 		var tx Transaction
-
-		if err = json.Unmarshal(body[:length], &tx); err != nil {
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &tx); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -119,17 +102,9 @@ func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
 	toAllowAccess(w)
 
 	if r.Method == methodPost {
-		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := make([]byte, length)
-		length, err = r.Body.Read(body)
-
 		var wallet Wallet
-
-		if err = json.Unmarshal(body[:length], &wallet); err != nil {
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &wallet); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -147,6 +122,19 @@ func toAllowAccess(w http.ResponseWriter) {
 func writeResponse(w http.ResponseWriter, result bool) {
 	jsonValue, _ := json.Marshal(map[string]bool{"result": result})
 	w.Write(jsonValue)
+}
+
+func parseJSON(r *http.Request) []byte {
+	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body := make([]byte, length)
+	length, err = r.Body.Read(body)
+	if err != nil {
+		log.Println(err)
+	}
+	return body[:length]
 }
 
 // StartMining is mining every 10sec.

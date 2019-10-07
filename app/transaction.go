@@ -20,13 +20,12 @@ func (tx *Transaction) hash() []byte {
 	return hash
 }
 
-// AddTransaction returns result whether appending transaction successed.
-func (tx *Transaction) AddTransaction(wallet *Wallet) bool {
+func (tx *Transaction) addTransaction(wallet *Wallet) bool {
 	if tx.SenderAddress == MiningSender {
 		TransactionPool = append(TransactionPool, *tx)
 		return true
 	}
-	signature := wallet.GenerateSignature(tx.RecipientAddress, tx.Value)
+	signature := wallet.generateSignature(tx.RecipientAddress, tx.Value)
 	if signature.verifyTransactionSignature(&wallet.PublicKey, *tx) {
 		TransactionPool = append(TransactionPool, *tx)
 		return true
