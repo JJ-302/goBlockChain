@@ -35,7 +35,6 @@ func createWalletHandler(w http.ResponseWriter, r *http.Request) {
 func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		templates := template.Must(template.ParseFiles("app/views/transaction.html"))
-
 		if err := templates.Execute(w, TransactionPool); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -43,7 +42,6 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	toAllowAccess(w)
-
 	if r.Method == methodPost {
 		var tx Transaction
 		body := parseJSON(r)
@@ -51,12 +49,10 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		if _, isExist := WalletPool[tx.RecipientAddress]; !isExist {
 			writeResponse(w, false)
 			return
 		}
-
 		if wallet := WalletPool[tx.SenderAddress]; tx.addTransaction(&wallet) {
 			for _, node := range Neighbours {
 				url := "http://" + node + "/sync"
@@ -100,7 +96,6 @@ func consensusHandler(w http.ResponseWriter, r *http.Request) {
 
 func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
 	toAllowAccess(w)
-
 	if r.Method == methodPost {
 		var wallet Wallet
 		body := parseJSON(r)
