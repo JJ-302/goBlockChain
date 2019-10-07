@@ -22,11 +22,8 @@ func init() {
 }
 
 func getChainHandler(w http.ResponseWriter, r *http.Request) {
-	templates := template.Must(template.ParseFiles("app/views/chain.html"))
-
-	if err := templates.Execute(w, Chain); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	jsonValue, _ := json.Marshal(Chain)
+	w.Write(jsonValue)
 }
 
 func createWalletHandler(w http.ResponseWriter, r *http.Request) {
@@ -101,8 +98,20 @@ func syncTransactionHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Println(tx)
 		tx.syncTransaction()
+	}
+}
+
+func deleteTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		TransactionPool = TransactionPool[:0]
+	}
+}
+
+func consensusHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		result := ResolveConflicts()
+		log.Println("Resolve conflicts:", result)
 	}
 }
 
@@ -156,6 +165,8 @@ func StartBlockchainServer(port int) error {
 	http.HandleFunc("/chain", getChainHandler)
 	http.HandleFunc("/transaction", transactionHandler)
 	http.HandleFunc("/sync", syncTransactionHandler)
+	http.HandleFunc("/sync/delete", deleteTransactionHandler)
+	http.HandleFunc("/consensus", consensusHandler)
 	http.HandleFunc("/calc", calcTotalAmountHandler)
 	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }

@@ -5,7 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"projects/goBlockChain/utils"
 	"regexp"
 	"strings"
@@ -61,6 +63,15 @@ func CreateBlock(nonce int, ph string, txs []Transaction) {
 	}
 	Chain = append(Chain, b)
 	TransactionPool = TransactionPool[:0]
+	for _, node := range Neighbours {
+		url := "http://" + node + "/sync/delete"
+		resp, err := http.Post(url, "application/json", nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+	}
 }
 
 func (b *Block) hash() string {
@@ -104,7 +115,69 @@ func Mining(wallet *Wallet) {
 	previousHash := Chain[len(Chain)-1].hash()
 	nonce, txs := proofOfWork()
 	CreateBlock(nonce, previousHash, txs)
+	for _, node := range Neighbours {
+		url := "http://" + node + "/consensus"
+		resp, err := http.Post(url, "application/json", nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+	}
 	fmt.Println("Mining is successfully")
+}
+
+func validChain(chain []Block) bool {
+	preBlock := chain[0]
+	currentIndex := 1
+	for i := currentIndex; i < len(chain); i++ {
+		block := chain[currentIndex]
+		if block.PreviousHash != preBlock.hash() {
+			return false
+		}
+		if !validProof(block.Transactions, block.PreviousHash, block.Nonce) {
+			return false
+		}
+		preBlock = block
+		currentIndex++
+	}
+	return true
+}
+
+func ResolveConflicts() bool {
+	maxLength := len(Chain)
+	for _, node := range Neighbours {
+		url := "http://" + node + "/chain"
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		var respChain []Block
+		if err = json.Unmarshal(body, &respChain); err != nil {
+			log.Println(err)
+			return false
+		}
+		fmt.Println(respChain)
+		chainLength := len(respChain)
+		if chainLength > maxLength && validChain(respChain) {
+			maxLength = chainLength
+			Chain = respChain
+		}
+	}
+	if len(Chain) == 0 {
+		log.Println("chain_was_not_replaced")
+		return false
+	}
+	log.Println("chain_was_replaced")
+	return true
 }
 
 // CalculateTotalAmount is calculates the amount of Bitcoin you have.
