@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -8,10 +9,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"projects/goBlockChain/config"
 	"strconv"
 	"time"
 )
+
+const methodPost = "POST"
 
 func init() {
 	var initialHash []byte
@@ -20,11 +22,8 @@ func init() {
 }
 
 func getChainHandler(w http.ResponseWriter, r *http.Request) {
-	templates := template.Must(template.ParseFiles("app/views/chain.html"))
-
-	if err := templates.Execute(w, Chain); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	jsonValue, _ := json.Marshal(Chain)
+	w.Write(jsonValue)
 }
 
 func createWalletHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +35,6 @@ func createWalletHandler(w http.ResponseWriter, r *http.Request) {
 func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		templates := template.Must(template.ParseFiles("app/views/transaction.html"))
-
 		if err := templates.Execute(w, TransactionPool); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -44,29 +42,26 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	toAllowAccess(w)
-
-	if r.Method == "POST" {
-		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		body := make([]byte, length)
-		length, err = r.Body.Read(body)
-
+	if r.Method == methodPost {
 		var tx Transaction
-
-		if err = json.Unmarshal(body[:length], &tx); err != nil {
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &tx); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		if _, isExist := WalletPool[tx.RecipientAddress]; !isExist {
 			writeResponse(w, false)
 			return
 		}
-
-		if wallet := WalletPool[tx.SenderAddress]; tx.AddTransaction(&wallet) {
+		if wallet := WalletPool[tx.SenderAddress]; tx.addTransaction(&wallet) {
+			for _, node := range Neighbours {
+				url := "http://" + node + "/sync"
+				resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
+				if err != nil {
+					log.Println(err)
+				}
+				defer resp.Body.Close()
+			}
 			writeResponse(w, true)
 		} else {
 			writeResponse(w, false)
@@ -74,21 +69,37 @@ func transactionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
-	toAllowAccess(w)
-
-	if r.Method == "POST" {
-		length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+func syncTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		var tx Transaction
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &tx); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		body := make([]byte, length)
-		length, err = r.Body.Read(body)
+		tx.syncTransaction()
+	}
+}
 
+func deleteTransactionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		TransactionPool = TransactionPool[:0]
+	}
+}
+
+func consensusHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == methodPost {
+		result := ResolveConflicts()
+		log.Println("Resolve conflicts:", result)
+	}
+}
+
+func calcTotalAmountHandler(w http.ResponseWriter, r *http.Request) {
+	toAllowAccess(w)
+	if r.Method == methodPost {
 		var wallet Wallet
-
-		if err = json.Unmarshal(body[:length], &wallet); err != nil {
+		body := parseJSON(r)
+		if err := json.Unmarshal(body, &wallet); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -108,6 +119,19 @@ func writeResponse(w http.ResponseWriter, result bool) {
 	w.Write(jsonValue)
 }
 
+func parseJSON(r *http.Request) []byte {
+	length, err := strconv.Atoi(r.Header.Get("Content-Length"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body := make([]byte, length)
+	length, err = r.Body.Read(body)
+	if err != nil {
+		log.Println(err)
+	}
+	return body[:length]
+}
+
 // StartMining is mining every 10sec.
 func StartMining(wallet *Wallet) {
 	fmt.Println("mining to listen on")
@@ -118,11 +142,14 @@ func StartMining(wallet *Wallet) {
 }
 
 // StartBlockchainServer start blockchain node.
-func StartBlockchainServer() error {
-	log.Println("Port:8080 to listen on")
+func StartBlockchainServer(port int) error {
+	log.Printf("Port: %v to listen on", port)
 	http.HandleFunc("/wallet", createWalletHandler)
 	http.HandleFunc("/chain", getChainHandler)
 	http.HandleFunc("/transaction", transactionHandler)
+	http.HandleFunc("/sync", syncTransactionHandler)
+	http.HandleFunc("/sync/delete", deleteTransactionHandler)
+	http.HandleFunc("/consensus", consensusHandler)
 	http.HandleFunc("/calc", calcTotalAmountHandler)
-	return http.ListenAndServe(fmt.Sprintf(":%d", config.Config.Port), nil)
+	return http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 }

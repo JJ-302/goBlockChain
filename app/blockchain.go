@@ -5,7 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"projects/goBlockChain/utils"
 	"regexp"
 	"strings"
 	"time"
@@ -22,14 +25,32 @@ type Block struct {
 // Chain is a bucket to append mined block.
 var Chain []Block
 
-// TransactionPool is
+// TransactionPool is slice of a transaction that has not been mined.
 var TransactionPool []Transaction
 
+// Neighbours is neighbour node Address.
+var Neighbours []string
+
 const miningDifficulty = 3
+const portRangeStart = 8080
+const portRangeEnd = 8082
+const ipRangeStart = 0
+const ipRangeEnd = 1
+const neighboursSyncTimeSec = 20
 
 // MiningSender is send reward to miner.
 const MiningSender = "The BlockChain"
 const miningReward = 1.0
+
+// SetNeighbours searches node at regular intervals.
+func SetNeighbours(port int) {
+	addr := utils.GetHost()
+	for {
+		Neighbours = utils.FindNeighbours(addr, port, ipRangeStart, ipRangeEnd, portRangeStart, portRangeEnd)
+		log.Println("neighbours: ", Neighbours)
+		time.Sleep(neighboursSyncTimeSec * time.Second)
+	}
+}
 
 // CreateBlock is create a struct based on args and transactions.
 // And append created block to chain.
@@ -42,6 +63,15 @@ func CreateBlock(nonce int, ph string, txs []Transaction) {
 	}
 	Chain = append(Chain, b)
 	TransactionPool = TransactionPool[:0]
+	for _, node := range Neighbours {
+		url := "http://" + node + "/sync/delete"
+		resp, err := http.Post(url, "application/json", nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+	}
 }
 
 func (b *Block) hash() string {
@@ -79,13 +109,75 @@ func Mining(wallet *Wallet) {
 		return
 	}
 	tx := CreateTransaction(MiningSender, wallet.BlockchainAddress, miningReward)
-	if !tx.AddTransaction(wallet) {
+	if !tx.addTransaction(wallet) {
 		log.Fatalln("exit!")
 	}
 	previousHash := Chain[len(Chain)-1].hash()
 	nonce, txs := proofOfWork()
 	CreateBlock(nonce, previousHash, txs)
+	for _, node := range Neighbours {
+		url := "http://" + node + "/consensus"
+		resp, err := http.Post(url, "application/json", nil)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		defer resp.Body.Close()
+	}
 	fmt.Println("Mining is successfully")
+}
+
+func validChain(chain []Block) bool {
+	preBlock := chain[0]
+	currentIndex := 1
+	for i := currentIndex; i < len(chain); i++ {
+		block := chain[currentIndex]
+		if block.PreviousHash != preBlock.hash() {
+			return false
+		}
+		if !validProof(block.Transactions, block.PreviousHash, block.Nonce) {
+			return false
+		}
+		preBlock = block
+		currentIndex++
+	}
+	return true
+}
+
+// ResolveConflicts valid neighbour node's blockchain.
+func ResolveConflicts() bool {
+	maxLength := len(Chain)
+	for _, node := range Neighbours {
+		url := "http://" + node + "/chain"
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			return false
+		}
+		var respChain []Block
+		if err = json.Unmarshal(body, &respChain); err != nil {
+			log.Println(err)
+			return false
+		}
+		chainLength := len(respChain)
+		if chainLength > maxLength && validChain(respChain) {
+			maxLength = chainLength
+			Chain = respChain
+		}
+	}
+	if len(Chain) == 0 {
+		log.Println("chain_was_not_replaced")
+		return false
+	}
+	log.Println("chain_was_replaced")
+	return true
 }
 
 // CalculateTotalAmount is calculates the amount of Bitcoin you have.
